@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bubbles App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .btn {
+            @apply px-6 py-2 font-semibold rounded bg-white border border-black text-black shadow-none hover:bg-gray-100 focus:outline-none focus:ring-0 transition-all duration-300;
+            position: relative;
+            overflow: visible;
+        }
+        .btn-sketch {
+            border-width: 2.5px;
+            border-radius: 0.4em;
+            box-shadow: 0 2px 0 0 #000, 2px 0 0 0 #000, 0 -2px 0 0 #000, -2px 0 0 0 #000, 0 4px 0 0 #000, 0 6px 0 0 #000;
+        }
+        .btn-hit {
+            @apply;
+        }
+        .btn-reset {
+            @apply;
+        }
+        .btn:disabled {
+            @apply bg-gray-200 text-gray-400 border-black cursor-not-allowed;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <div class="bg-white p-6 sm:p-8 rounded-xl shadow-lg text-center w-full max-w-2xl mx-4">
+        <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-4">Bubbles App</h1>
+        <canvas id="gameCanvas" class="bg-gray-50 border border-gray-200 rounded-lg w-full"></canvas>
+        <div class="mt-6 flex justify-end space-x-4">
+            <button id="hitButton" class="btn btn-sketch w-24">Hit</button>
+            <button id="resetButton" class="btn btn-sketch w-24">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const hitButton = document.getElementById('hitButton');
+        const resetButton = document.getElementById('resetButton');
+
+        let circleX, circleY, circleRadius, circleColor;
+        let arrowX, arrowY, arrowWidth, arrowHeight;
+        let isAnimating = false;
+        let animationId;
+        const arrowSpeed = 5;
+
+        const getRandomColor = () => {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        };
+        
+        function resizeCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            init();
+        }
+
+        const drawCircle = () => {
+            ctx.beginPath();
+            ctx.arc(circleX, circleY, circleRadius, 0, Math.PI * 2);
+            ctx.fillStyle = circleColor;
+            ctx.fill();
+            ctx.closePath();
+        };
+
+        const drawArrow = () => {
+            ctx.fillStyle = '#333333';
+            ctx.fillRect(arrowX, arrowY - arrowHeight / 4, arrowWidth, arrowHeight / 2);
+            ctx.beginPath();
+            ctx.moveTo(arrowX, arrowY - arrowHeight / 2);
+            ctx.lineTo(arrowX, arrowY + arrowHeight / 2);
+            ctx.lineTo(arrowX - arrowHeight, arrowY);
+            ctx.closePath();
+            ctx.fill();
+        };
+
+        const clearCanvas = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        };
+        
+        const animate = () => {
+            if (!isAnimating) return;
+
+            clearCanvas();
+            arrowX -= arrowSpeed;
+            drawCircle();
+            drawArrow();
+
+            const arrowTipX = arrowX - arrowHeight;
+            const distance = Math.sqrt(Math.pow(arrowTipX - circleX, 2) + Math.pow(arrowY - circleY, 2));
+
+            if (distance <= circleRadius) {
+                isAnimating = false;
+                circleColor = getRandomColor();
+                drawCircle();
+                hitButton.disabled = false;
+                hitButton.textContent = 'Hit Again!';
+            } else if (arrowX < -arrowWidth) {
+                isAnimating = false;
+                hitButton.disabled = false;
+                hitButton.textContent = 'Try Again!';
+            } else {
+                animationId = requestAnimationFrame(animate);
+            }
+        };
+
+        const init = () => {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+            isAnimating = false;
+            
+            const logicalWidth = canvas.clientWidth;
+            const logicalHeight = canvas.clientHeight;
+            
+            circleRadius = logicalWidth * 0.13;
+            circleX = logicalWidth * 0.2;
+            circleY = logicalHeight / 2;
+            circleColor = '#FFD966';
+
+            arrowWidth = logicalWidth * 0.1;
+            arrowHeight = logicalWidth * 0.05;
+            arrowX = logicalWidth * 0.85;
+            arrowY = logicalHeight / 2;
+
+            clearCanvas();
+            drawCircle();
+            drawArrow();
+            
+            hitButton.disabled = false;
+            hitButton.textContent = 'Hit';
+        };
+
+        const handleHit = () => {
+            if (isAnimating) return;
+            isAnimating = true;
+            hitButton.disabled = true;
+            animate();
+        };
+
+        const handleReset = () => {
+            init();
+        };
+
+        hitButton.addEventListener('click', handleHit);
+        resetButton.addEventListener('click', handleReset);
+
+        window.addEventListener('load', resizeCanvas);
+        window.addEventListener('resize', resizeCanvas);
+
+    </script>
+</body>
+</html>
